@@ -1,563 +1,719 @@
+// Global variables
+let currentPage = 'dashboard';
+let localDbIds = [];
+let userMetadata = {};
+let ageVerified = false;
+let isInitialized = false;
 
-chrome.runtime.onConnect.addListener(function (port) {
-  console.log('connected to: ', port.name);
-  _port = port;
-
-  _port.onMessage.addListener(processMessages);
-  p_portrt.postMessage({
-    msg: 'hello from popup'
-  });
+// Initialize the popup when DOM is loaded
+document.addEventListener('DOMContentLoaded', function () {
+  // Show dashboard immediately on startup
+  navigateToPage('dashboard');
+  setupNavigation();
+  setupEventListeners();
+  initializePopup();
 });
 
-document.addEventListener('DOMContentLoaded', function() {
+// Initialize popup functionality
+function initializePopup() {
+  // Always load initial data first
+  loadInitialData().then(() => {
+    // Then check if gradio app is found and user is verified
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, { type: 'gradio?' }, function (response) {
+        if (chrome.runtime.lastError) {
+          console.log("Error communicating with content script");
+        }
 
-  // The main popup elements
-  const demographicForm = document.getElementById("demographicForm");
-  // const conditions = document.getElementById("conditions");
-  const localSavedConversations = document.getElementById("saved-conversations");
-  const unsupportedMessage = document.getElementById("unsupported-message");
-  const faqSection = document.getElementById("faq-items-wrapper");
-  const hereWeGo = document.getElementById("here-we-go");
-
-  // Ask the content script whether the gradio app was found. if it was, show the demographic form and saved conversations
-
-  // addDemographicForm();
-
-  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-    chrome.tabs.sendMessage(tabs[0].id, { type: 'gradio?' }, function(response) {
-      if (chrome.runtime.lastError) {
-        // console.log("error sending gradio? message to content script");
-      }
-      if (response && response.gradio) {
-        getUserStateAndShow();
-      } else {
-        unsupportedMessage.classList.remove("hidden");
-      }
-    });
-  });
-
-  addCopyButton();
-  handleFAQClick();
-  buildConversationsTable();
-  addSharedCounter();
-  addDownloadButton();
-
-  function handleFAQClick() {
-    // Get all FAQ items
-    const faqItems = document.querySelectorAll(".faq-item");
-
-    // Attach click event listener to each FAQ item
-    faqItems.forEach(function (item) {
-      const question = item.querySelector(".faq-question");
-      const answer = item.querySelector(".faq-answer");
-
-      // Toggle answer visibility when question is clicked
-      question.addEventListener("click", function () {
-        if (answer.style.display === "none" || answer.style.display === "") {
-          answer.style.display = "block";
+        if (response && response.gradio) {
+          checkUserVerification();
         } else {
-          answer.style.display = "none";
+          showUnsupportedSite();
         }
       });
     });
+  });
+}
 
-    // Toggle more FAQs visibility when the button is clicked
-    const toggleFaqButton = document.getElementById("toggle-faq-button");
-    console.log("toggleFaqButton", toggleFaqButton);
-    const hiddenFaqItems = document.querySelectorAll(".faq-item.hidden");
+// Load initial data before showing any interface
+async function loadInitialData() {
+  try {
+    const [ageVerifiedData, userMetadataData, localDbIdsData] = await Promise.all([
+      getFromStorage("age_verified"),
+      getFromStorage("user_metadata"),
+      getFromStorage("local_db_ids")
+    ]);
 
-    let isFaqVisible = false;
+    ageVerified = ageVerifiedData || false;
+    userMetadata = userMetadataData || {};
+    localDbIds = localDbIdsData || [];
 
-    toggleFaqButton.addEventListener("click", () => {
-      toggleFaqButton.classList.toggle('clicked');
-      console.log("toggleFaqButton clicked");
-      hiddenFaqItems.forEach((item) => {
-        item.classList.toggle("hidden", isFaqVisible);
-        console.log("toggle faq item", item);
-      });
-      isFaqVisible = !isFaqVisible;
-    });
+    isInitialized = true;
+  } catch (error) {
+    console.error("Error loading initial data:", error);
+  }
+}
+
+// Setup navigation functionality
+function setupNavigation() {
+  const navButtons = document.querySelectorAll('.nav-btn');
+  console.log('Setting up navigation, found buttons:', navButtons.length);
+
+  if (navButtons.length === 0) {
+    console.error('No navigation buttons found!');
+    return;
   }
 
-  function getUserStateAndShow() {
-    // Check if the user has verified their age
-    getFromStorage("age_verified").then(age_verified => {
-      if (age_verified) {
-        hereWeGo.classList.remove("hidden");
-        console.log("verification received from content.js:", age_verified);
+  navButtons.forEach(button => {
+    const targetPage = button.dataset.page;
+    console.log('Button data-page:', targetPage);
 
-        // Check if the user already saved some metadata
-        getFromStorage("user_metadata").then(user_metadata => {
-          if (user_metadata) {
-            console.log("got user metadata", user_metadata);
-          } else {
-            console.log("user metadata not found in storage");
-            demographicForm.classList.remove("hidden");
-            addDemographicForm();
-          }
-        });
-      } else {
-        addTermsOfUseButton();
-      }
+    if (!targetPage) {
+      console.error('Button missing data-page attribute:', button);
+      return;
+    }
+
+    // Add click event listener directly to the button
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      console.log('Navigation clicked:', targetPage);
+      navigateToPage(targetPage);
     });
+  });
+}
+
+// Navigate to specific page
+function navigateToPage(page) {
+  console.log('Navigating to page:', page);
+
+  // Update navigation buttons
+  const navButtons = document.querySelectorAll('.nav-btn');
+  console.log('Found nav buttons:', navButtons.length);
+
+  navButtons.forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.page === page) {
+      btn.classList.add('active');
+      console.log('Set active nav button:', page);
+    }
+  });
+
+  // Show/hide pages with better error handling
+  const pageSections = document.querySelectorAll('.page-section');
+  console.log('Found page sections:', pageSections.length);
+
+  let targetPageFound = false;
+  pageSections.forEach(section => {
+    section.classList.remove('active');
+    if (section.id === `${page}-page`) {
+      section.classList.add('active');
+      console.log('Set active page:', page);
+      targetPageFound = true;
+    }
+  });
+
+  if (!targetPageFound) {
+    console.error('Could not find page section for:', page);
+    // Fallback: show dashboard if target page not found
+    const dashboardPage = document.getElementById('dashboard-page');
+    if (dashboardPage) {
+      dashboardPage.classList.add('active');
+      console.log('Falling back to dashboard');
+    }
   }
 
-  function addDemographicForm() {
-    const genderDropdown = document.getElementById("gender");
-    const customGenderWrapper = document.getElementById("customGenderWrapper");
+  currentPage = page;
 
-    genderDropdown.addEventListener("change", function () {
-      if (genderDropdown.value === "Specify your own") {
-        customGenderWrapper.style.display = "block";
-      } else {
-        customGenderWrapper.style.display = "none";
-      }
-    });
+  // Load page-specific content with error handling
+  try {
+    switch (page) {
+      case 'dashboard':
+        loadDashboardData();
+        break;
+      case 'conversations':
+        loadConversations();
+        break;
+      case 'settings':
+        loadSettingsData();
+        break;
+      case 'help':
+        // Help page is static - no additional loading needed
+        console.log('Help page loaded');
+        break;
+      default:
+        console.warn('Unknown page:', page);
+    }
+  } catch (error) {
+    console.error('Error loading page content:', error);
+  }
+}
 
-    demographicForm.addEventListener('submit', function (event) {
-      event.preventDefault();
+// Check user verification status
+function checkUserVerification() {
+  if (!ageVerified) {
+    showVerificationPrompt();
+  } else {
+    // Dashboard is already visible, just load the data
+    loadDashboardData();
+  }
+}
 
-      let age = document.getElementById('age');
-      if (age) {
-        age = age.value;
-      } else {
-        age = 0;
-      }
-      let gender = document.getElementById("gender");
-      if (gender) {
-        if (gender.value === "Specify your own") {
-          gender = document.getElementById("customGender").value;
+// Show verification prompt
+function showVerificationPrompt() {
+  document.getElementById('conditions').classList.remove('hidden');
+  // Don't hide main interface - keep dashboard visible
+}
+
+// Show unsupported site message
+function showUnsupportedSite() {
+  document.getElementById('unsupported-message').classList.remove('hidden');
+  // Don't hide main interface - keep dashboard visible
+}
+
+// Show main interface
+function showMainInterface() {
+  // Ensure the dashboard is visible and loaded
+  document.getElementById('dashboard-page').classList.add('active');
+  // Load dashboard data immediately when showing main interface
+  loadDashboardData();
+}
+
+// Hide main interface
+function hideMainInterface() {
+  document.querySelectorAll('.page-section').forEach(section => {
+    if (!section.id.includes('conditions') && !section.id.includes('unsupported')) {
+      section.classList.remove('active');
+    }
+  });
+}
+
+// Get site name from URL
+function getSiteName() {
+  return new Promise((resolve) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (tabs[0] && tabs[0].url) {
+        const url = new URL(tabs[0].url);
+        const hostname = url.hostname;
+
+        if (hostname.includes('huggingface.co')) {
+          resolve('HuggingFace');
+        } else if (hostname.includes('openai.com')) {
+          resolve('OpenAI');
+        } else if (hostname.includes('claude.ai')) {
+          resolve('Claude');
+        } else if (hostname.includes('gemini.google.com')) {
+          resolve('Gemini');
+        } else if (hostname.includes('grok.com')) {
+          resolve('Grok');
+        } else if (hostname.includes('mistral.ai')) {
+          resolve('Mistral');
+        } else if (hostname.includes('poe.com')) {
+          resolve('Poe');
+        } else if (hostname.includes('perplexity.ai')) {
+          resolve('Perplexity');
         } else {
-          gender = gender.value;
+          resolve('Unknown');
         }
       } else {
-        gender = "";
-      }
-      let location = document.getElementById('location');
-      if (location) {
-        location = location.value;
-      } else {
-        location = "";
-      }
-      const user_metadata = {"age": age, "gender": gender, "location": location};
-      chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, {type: 'userDataUpdate', user_metadata: user_metadata}, function (response) {
-          if (chrome.runtime.lastError) {
-            // console.log("error sending userDataUpdate message to content script");
-          }
-        });
-      });
-      console.log("user metadata updated", user_metadata);
-      demographicForm.classList.add("hidden"); // Hide the form
-    });
-
-    // Get references to the form and the toggle button
-    const formFields = document.getElementById("formFieldsWrapper");
-    const toggleFormButton = document.getElementById("toggleFormButton");
-
-    // Set an initial state (hidden)
-    let isFormVisible = false;
-    formFields.style.display = "none";
-
-    // Add a click event listener to the button
-    toggleFormButton.addEventListener("click", () => {
-      toggleFormButton.classList.toggle('clicked');
-      if (isFormVisible) {
-        formFields.style.display = "none";
-        isFormVisible = false;
-      } else {
-        formFields.style.display = "block";
-        isFormVisible = true;
+        resolve('Unknown');
       }
     });
+  });
+}
+
+// Load dashboard data
+async function loadDashboardData() {
+  try {
+    // Get all data in parallel
+    const [messagesCounter, shouldShareData, siteName] = await Promise.all([
+      getFromStorage("messages_counter_from_storage"),
+      getFromStorage("shouldShare"),
+      getSiteName()
+    ]);
+
+    // Update conversations/messages shared counter
+    const conversationsShared = messagesCounter || 0;
+    document.getElementById('conversations-shared').textContent = conversationsShared;
+
+    // Update pending conversations count
+    const pendingCount = localDbIds.length;
+    document.getElementById('pending-conversations').textContent = pendingCount;
+
+    // Update current site
+    document.getElementById('current-site').textContent = siteName;
+
+    // Update user status
+    const userStatus = ageVerified ? 'Verified' : 'Unverified';
+    document.getElementById('user-status').textContent = userStatus;
+
+    // Update sharing status
+    const shouldShare = shouldShareData ? shouldShareData.shouldShare : true;
+    const statusIndicator = document.getElementById('sharing-status');
+    const statusDot = statusIndicator.querySelector('.status-dot');
+    const statusText = statusIndicator.querySelector('.status-text');
+
+    if (shouldShare && ageVerified) {
+      statusIndicator.classList.remove('inactive');
+      statusText.textContent = 'Sharing Active';
+    } else {
+      statusIndicator.classList.add('inactive');
+      statusText.textContent = shouldShare ? 'Sharing Disabled (Unverified)' : 'Sharing Disabled';
+    }
+
+    // Update progress card
+    updateProgressCard(pendingCount);
+
+  } catch (error) {
+    console.error("Error loading dashboard data:", error);
+    // Set default values in case of error
+    document.getElementById('conversations-shared').textContent = '0';
+    document.getElementById('pending-conversations').textContent = '0';
+    document.getElementById('current-site').textContent = 'Unknown';
+    document.getElementById('user-status').textContent = 'Error';
   }
+}
 
-  function addTermsOfUseButton() {
-    conditions.classList.remove("hidden");
-    const termsOfUseButton = document.getElementById("terms-of-use-button");
-    termsOfUseButton.addEventListener("click", function () {
-      chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, {type: 'termsOfUse'}, function (response) {
-          if (chrome.runtime.lastError) {
-            // console.log("error sending termsOfUse message to content script");
-          }
-        });
-      });
-    });
+// Update progress card based on pending conversations
+function updateProgressCard(pendingCount) {
+  const progressCard = document.getElementById('progress-card');
+  const progressText = document.getElementById('progress-text');
+  const progressPercentage = document.getElementById('progress-percentage');
+  const progressFill = document.getElementById('progress-fill');
+
+  if (pendingCount > 0) {
+    progressCard.style.display = 'block';
+    progressText.textContent = `${pendingCount} conversation${pendingCount !== 1 ? 's' : ''} ready to share`;
+
+    // Calculate progress percentage (assuming 10 conversations is 100%)
+    const maxConversations = 10;
+    const percentage = Math.min(100, (pendingCount / maxConversations) * 100);
+    progressPercentage.textContent = `${Math.round(percentage)}%`;
+    progressFill.style.width = `${percentage}%`;
+  } else {
+    progressCard.style.display = 'none';
   }
+}
 
-  function buildConversationsTable() {
-    let local_db_ids = [];
-    getFromStorage("local_db_ids").then((local_db_from_storage) => {
-      console.log("local_db_from_storage:", local_db_from_storage);
-      local_db_ids = local_db_from_storage ?? [];
+// Load conversations for the conversations page
+function loadConversations() {
+  const conversationsList = document.getElementById('conversations-list');
+  const totalConversationsSpan = document.getElementById('total-conversations');
 
-      // Get the table body element
-      const tableBody = document.querySelector("#saved-conversations-table tbody");
+  // Show loading state
+  conversationsList.innerHTML = '<div class="loading-state">Loading conversations...</div>';
 
-      // Generate table rows for saved conversations
-      local_db_ids.forEach((conversation_id, index) => {
+  getFromStorage("local_db_ids").then(ids => {
+    localDbIds = ids || [];
+    totalConversationsSpan.textContent = localDbIds.length;
 
-        console.log("conversation_id", conversation_id);
-        getFromStorage(conversation_id).then(
-            (conversation_from_storage) => {
-              if (conversation_from_storage !== null) {
-                console.log("conversation found in storage", conversation_from_storage);
-                let conversation = "";
-                for (let i = 0; i < conversation_from_storage.bot_msgs.length; i++) {
-                  conversation += "😄: " + conversation_from_storage.user_msgs[i] + "\n";
-                  conversation += "🤖: " + conversation_from_storage.bot_msgs[i] + "\n";
-                }
+    if (localDbIds.length === 0) {
+      conversationsList.innerHTML = `
+        <div class="card">
+          <p class="text-center">No conversations found. Start chatting to see your conversations here!</p>
+        </div>
+      `;
+      return;
+    }
 
-                // Manually break to lines if no spaces are found.
-                let result = '';
-                let lineLength = 0;
+    // Clear loading state
+    conversationsList.innerHTML = '';
 
-                for (let i = 0; i < conversation.length; i++) {
-                  result += conversation[i];
-                  if (conversation[i] === ' ') {
-                    lineLength = 0;
-                  } else {
-                    lineLength += 1;
-                  }
+    // Load conversations with better error handling
+    const conversationPromises = localDbIds.map((conversationId) =>
+      getFromStorage(conversationId).then(conversation => ({
+        id: conversationId,
+        data: conversation
+      }))
+    );
 
-                  if (lineLength >= 25) { // Adjust based on font-size
-                    result += '\n';
-                    lineLength = 0;
-                  }
-                }
-                conversation = result;
-
-                // Display only the first 50 characters of the conversation initially.
-                let truncatedText = conversation.length > 50 ? conversation.slice(0, 50) + "..." : conversation;
-
-                // Create a div to hold the truncated text and "Read More" link
-                const contentDiv = document.createElement("div");
-                contentDiv.textContent = truncatedText;
-
-                // If the conversation is long, add a "Read More" link to expand it
-                if (conversation.length > 50) {
-                  const readMoreLink = document.createElement("a");
-                  readMoreLink.textContent = "Read More";
-                  readMoreLink.href = "#";
-                  readMoreLink.classList.add("read-more-link");
-
-                  readMoreLink.addEventListener("click", () => {
-                    if (contentDiv.classList.contains("expanded")) {
-                      contentDiv.textContent = truncatedText;
-                      contentDiv.classList.remove("expanded");
-                      readMoreLink.textContent = "Read More";
-                      if (!contentDiv.contains(readMoreLink)) {
-                        contentDiv.appendChild(readMoreLink);
-                      }
-                    } else {
-                      console.log("read less!");
-                      contentDiv.textContent = conversation;
-                      contentDiv.classList.add("expanded");
-                      readMoreLink.textContent = "Read Less";
-                      if (!contentDiv.contains(readMoreLink)) {
-                        contentDiv.appendChild(readMoreLink);
-                      }
-                    }
-                  });
-                  contentDiv.appendChild(readMoreLink);
-                }
-
-                const row = tableBody.insertRow();
-                const cell = row.insertCell(0);
-
-                // Create thumbup and thumbdown buttons
-                const thumbupButton = document.createElement("button");
-                thumbupButton.textContent = "👍";
-                thumbupButton.style.display = "block"; // Make it a block-level element
-                thumbupButton.style.margin = "0 auto"; // Center horizontally
-                thumbupButton.style.border = "none"; // Remove the border
-                thumbupButton.style.background = "none"; // Remove the background color
-                thumbupButton.style.outline = "none"; // Remove the outline
-                thumbupButton.style.cursor = "pointer"; // Set a pointer cursor
-                thumbupButton.style.color = "green"; // Change the color to indicate interactivity
-                thumbupButton.addEventListener("click", () => {
-                  console.log("thumbup clicked");
-                  if (thumbupButton.style.background === "green") {
-                    thumbupButton.style.background = "none";
-                    chrome.storage.local.remove(["rate_" + conversation_id], () => {
-                      if (chrome.runtime.lastError) {
-                        console.error("Error removing rate_conversation from storage", chrome.runtime.lastError);
-                      } else {
-                        console.log("rate_conversation removed from storage");
-                      }
-                    });
-                  } else {
-                    thumbupButton.style.background = "green";
-                    thumbdownButton.style.background = "none";
-                    saveToStorage("rate_" + conversation_id, "thumbup");
-                  }
-                });
-
-                const thumbdownButton = document.createElement("button");
-                thumbdownButton.textContent = "👎";
-                thumbdownButton.style.display = "block"; // Make it a block-level element
-                thumbdownButton.style.margin = "0 auto"; // Center horizontally
-                thumbdownButton.style.border = "none"; // Remove the border
-                thumbdownButton.style.background = "none"; // Remove the background color
-                thumbdownButton.style.outline = "none"; // Remove the outline
-                thumbdownButton.style.cursor = "pointer"; // Set a pointer cursor
-                thumbdownButton.style.color = "red"; // Change the color to indicate interactivity
-                thumbdownButton.addEventListener("click", () => {
-                  console.log("thumbdown clicked");
-                  if (thumbdownButton.style.background === "red") {
-                    thumbdownButton.style.background = "none";
-                    chrome.storage.local.remove(["rate_" + conversation_id], () => {
-                      if (chrome.runtime.lastError) {
-                        console.error("Error removing conversation from storage", chrome.runtime.lastError);
-                      } else {
-                        console.log("conversation removed from storage");
-                      }
-                    });
-                  } else {
-                    thumbdownButton.style.background = "red";
-                    thumbupButton.style.background = "none";
-                    saveToStorage("rate_" + conversation_id, "thumbdown");
-                  }
-                });
-
-                getFromStorage("rate_" + conversation_id).then(
-                    (rate) => {
-                      if (rate === null) {
-                        console.log("rate not found in storage");
-                      } else if (rate === "thumbup") {
-                        thumbupButton.style.background = "green";
-                      } else if (rate === "thumbdown") {
-                        thumbdownButton.style.background = "red";
-                      }
-                    });
-
-                const thumbsCell = row.insertCell(1);
-                thumbsCell.appendChild(thumbupButton);
-                thumbsCell.appendChild(thumbdownButton);
-
-                // Create a table cell for the "X" button
-                const removeButtonCell = row.insertCell(2);
-                const removeButton = document.createElement("button");
-                removeButton.textContent = "❌";
-                removeButton.style.display = "block"; // Make it a block-level element
-                removeButton.style.margin = "0 auto"; // Center horizontally
-                removeButton.style.border = "none"; // Remove the border
-                removeButton.style.background = "none"; // Remove the background color
-                removeButton.style.outline = "none"; // Remove the outline
-                removeButton.style.cursor = "pointer"; // Set a pointer cursor
-                removeButton.style.color = "red"; // Change the color to indicate interactivity
-
-
-                // Add a click event listener to the "X" button to remove the conversation
-                removeButton.addEventListener("click", () => {
-                  // Remove the corresponding row when the "X" button is clicked
-                  tableBody.removeChild(row);
-                  // Remove the conversation from local storage
-                  chrome.storage.local.remove([conversation_id], () => {
-                    if (chrome.runtime.lastError) {
-                      console.error("Error removing conversation from storage", chrome.runtime.lastError);
-                    } else {
-                      console.log("conversation removed from storage");
-                    }
-                  });
-                });
-                // Append the "X" button to the cell
-                removeButtonCell.appendChild(removeButton);
-
-                cell.appendChild(contentDiv);
-              } else {
-                console.log("conversation not found in storage");
-              }
-            }
-        )
-      });
-    });
-    // });
-    addPublishButton();
-  }
-
-  function addPublishButton() {
-    const publishButton = document.getElementById("publishButton");
-    console.log("publishButton", publishButton);
-    publishButton.addEventListener("click", function () {
-      const tableBody = document.querySelector("#saved-conversations-table tbody");
-      if (!tableBody.firstChild) {
-        // Show toast for empty case
-        const toast = document.createElement("div");
-        toast.textContent = "Nothing to publish";
-        toast.style.position = "fixed";
-        toast.style.bottom = "20px";
-        toast.style.left = "50%";
-        toast.style.transform = "translateX(-50%)";
-        toast.style.backgroundColor = "#333";
-        toast.style.color = "#fff";
-        toast.style.padding = "10px 20px";
-        toast.style.borderRadius = "5px";
-        toast.style.zIndex = "1000";
-        document.body.appendChild(toast);
-        setTimeout(() => document.body.removeChild(toast), 3000);
-        return; // Exit early
-      }
-
-      console.log("publishing...");
-      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.runtime.sendMessage({ type: 'publish' }, function (response) {
-          if (chrome.runtime.lastError) {
-            // console.log("error sending publish message to content script");
-          }
-        });
+    Promise.allSettled(conversationPromises).then(results => {
+      results.forEach(result => {
+        if (result.status === 'fulfilled' && result.value.data) {
+          createConversationItem(result.value.id, result.value.data, conversationsList);
+        }
       });
 
-      while (tableBody.firstChild) {
-        tableBody.removeChild(tableBody.firstChild);
-      }
-
-      const toast = document.createElement("div");
-      toast.textContent = "Published!🎉";
-      toast.style.position = "fixed";
-      toast.style.bottom = "20px";
-      toast.style.left = "50%";
-      toast.style.transform = "translateX(-50%)";
-      toast.style.backgroundColor = "#333";
-      toast.style.color = "#fff";
-      toast.style.padding = "10px 20px";
-      toast.style.borderRadius = "5px";
-      toast.style.zIndex = "1000";
-      document.body.appendChild(toast);
-      setTimeout(() => document.body.removeChild(toast), 3000);
-    });
-  }
-
-  function addDownloadButton() {
-    // Download button to allow the user to download the locally saved conversations in as a csv file
-    const downloadButton = document.getElementById("downloadButton");
-
-    // Add a click event listener to the button
-    downloadButton.addEventListener("click", () => {
-        // Get the locally saved conversations from storage
-      console.log("downloading...");
-        getFromStorage("local_db_ids").then((local_db_ids) => {
-            if (local_db_ids) {
-              console.log("local_db_ids:", local_db_ids);
-              let csv = "Conversation ID,User Message,Bot Response\n";
-              for (let i = 0; i < local_db_ids.length; i++) {
-                let conversation_id = local_db_ids[i];
-                getFromStorage(conversation_id).then((conversation) => {
-                  if (conversation) {
-                    console.log("conversation:", conversation);
-                    for (let i = 0; i < conversation.bot_msgs.length; i++) {
-                      let line = conversation_id + "," + "\"" + conversation.user_msgs[i].replace(/"/g, '""') + "\"" + ","
-                          + "\"" + conversation.bot_msgs[i].replace(/"/g, '""') + "\"" + "\n";
-                      csv +=  line;
-                    }
-                  }
-                  if (i === local_db_ids.length - 1) {
-                    // Create a temporary anchor element to download the csv file
-                    const tempAnchor = document.createElement("a");
-                    tempAnchor.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
-                    tempAnchor.target = '_blank';
-                    tempAnchor.download = 'conversations.csv';
-                    tempAnchor.click();
-                  }
-                });
-              }
-            }
-        });
-    });
-  }
-
-  function addCopyButton() {
-    // Get the button element by its ID
-    const copyButton = document.getElementById("copyButton");
-
-    // Add a click event listener to the button
-    copyButton.addEventListener("click", () => {
-      // Get the value you want to copy (replace with your value)
-
-      getFromStorage("user_id").then(
-          (user_id) => {
-            if (user_id !== null) {
-              console.log("user_id found in storage", user_id);
-              // Create a temporary input element to use the clipboard API
-              const tempInput = document.createElement("input");
-              tempInput.value = user_id;
-
-              // Append the input element to the DOM (it doesn't need to be visible)
-              document.body.appendChild(tempInput);
-
-              // Select the text inside the input element
-              tempInput.select();
-
-              // Copy the selected text to the clipboard
-              document.execCommand("copy");
-
-              // Remove the temporary input element from the DOM
-              document.body.removeChild(tempInput);
-
-              // Provide feedback to the user (optional)
-              alert("user-id copied to clipboard: " + user_id);
-            } else {
-              console.log("user_id not found in storage");
-            }
-          }
-      )
-    });
-  }
-
-  function addSharedCounter() {
-    getFromStorage("messages_counter_from_storage").then((counter_from_storage) => {
-      if (counter_from_storage) {
-        console.log("counter_from_storage:", counter_from_storage);
-        const messagesCounter = document.getElementById("already-shared-counter");
-        messagesCounter.innerHTML = `You have shared <br><span id="counter-number">${counter_from_storage}</span><br> chat responses! 💪🤩`;
-        // messagesCounter.textContent = "You have shared\n" + counter_from_storage + " chat responses! 💪🤩";
+      // If no conversations were loaded successfully
+      if (conversationsList.children.length === 0) {
+        conversationsList.innerHTML = `
+          <div class="card">
+            <p class="text-center">No valid conversations found.</p>
+          </div>
+        `;
       }
     });
+  });
+}
+
+// Create conversation item element with improved styling
+function createConversationItem(conversationId, conversation, container) {
+  const conversationDiv = document.createElement('div');
+  conversationDiv.className = 'conversation-item';
+  conversationDiv.dataset.conversationId = conversationId;
+
+  // Create preview text
+  let preview = 'No content available';
+  if (conversation.user_msgs && conversation.user_msgs.length > 0) {
+    preview = conversation.user_msgs[0].substring(0, 120) + '...';
   }
 
-
-});
-
-
-const toPromise = (callback) => {
-  const promise = new Promise((resolve, reject) => {
+  // Get date
+  let dateString = 'Unknown date';
+  if (conversation.timestamp) {
     try {
-      callback(resolve, reject);
+      const date = new Date(conversation.timestamp);
+      dateString = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      dateString = 'Invalid date';
     }
-    catch (err) {
-      reject(err);
+  }
+
+  // Get message counts
+  const userMsgCount = conversation.user_msgs ? conversation.user_msgs.length : 0;
+  const botMsgCount = conversation.bot_msgs ? conversation.bot_msgs.length : 0;
+
+  conversationDiv.innerHTML = `
+    <div class="conversation-header">
+      <div class="conversation-title">Conversation ${conversationId.substring(0, 8)}</div>
+      <div class="conversation-date">${dateString}</div>
+    </div>
+    <div class="conversation-preview">${preview}</div>
+    <div class="conversation-footer">
+      <div class="conversation-badges">
+        <span class="badge pending">Pending</span>
+        <span class="badge">${userMsgCount} messages</span>
+        <span class="badge">${botMsgCount} responses</span>
+      </div>
+      <div class="conversation-actions">
+        <button class="view-btn" onclick="viewConversation('${conversationId}')">👁️ View</button>
+        <button class="remove-btn" onclick="removeConversation('${conversationId}')">❌ Remove</button>
+      </div>
+    </div>
+  `;
+
+  container.appendChild(conversationDiv);
+}
+
+// View conversation details with improved formatting
+function viewConversation(conversationId) {
+  getFromStorage(conversationId).then(conversation => {
+    if (conversation) {
+      let fullText = `Conversation ID: ${conversationId}\n`;
+      fullText += `Timestamp: ${conversation.timestamp}\n`;
+      fullText += `URL: ${conversation.page_url || 'Unknown'}\n\n`;
+
+      const maxMessages = Math.max(
+        conversation.user_msgs ? conversation.user_msgs.length : 0,
+        conversation.bot_msgs ? conversation.bot_msgs.length : 0
+      );
+
+      for (let i = 0; i < maxMessages; i++) {
+        if (conversation.user_msgs && conversation.user_msgs[i]) {
+          fullText += `👤 User: ${conversation.user_msgs[i]}\n\n`;
+        }
+        if (conversation.bot_msgs && conversation.bot_msgs[i]) {
+          fullText += `🤖 AI: ${conversation.bot_msgs[i]}\n\n`;
+        }
+      }
+
+      // Create a modal-like display instead of alert
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: white;
+        max-width: 90%;
+        max-height: 80%;
+        overflow-y: auto;
+        padding: 20px;
+        border-radius: 8px;
+        white-space: pre-wrap;
+        font-family: monospace;
+        font-size: 12px;
+      `;
+      content.textContent = fullText;
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Close';
+      closeBtn.style.cssText = `
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #ff6b35;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+      `;
+      closeBtn.onclick = () => document.body.removeChild(modal);
+
+      content.appendChild(closeBtn);
+      modal.appendChild(content);
+      document.body.appendChild(modal);
     }
   });
-  return promise;
+}
+// Remove conversation with better error handling
+function removeConversation(conversationId) {
+  if (confirm('Are you sure you want to remove this conversation?')) {
+    chrome.storage.local.remove([conversationId], () => {
+      if (chrome.runtime.lastError) {
+        showToast('Error removing conversation', 'error');
+        console.error(chrome.runtime.lastError);
+      } else {
+        // Remove from local array
+        localDbIds = localDbIds.filter(id => id !== conversationId);
+        saveToStorage('local_db_ids', localDbIds);
+
+        // Remove the conversation element from UI
+        const conversationElement = document.querySelector(
+          `[data-conversation-id="${conversationId}"]`
+        );
+        if (conversationElement) {
+          conversationElement.remove();
+        }
+
+        // Update conversation count
+        document.getElementById('total-conversations').textContent = localDbIds.length;
+
+        // Update dashboard if currently viewing it
+        if (currentPage === 'dashboard') {
+          loadDashboardData();
+        }
+
+        // If no conversations left, show empty state
+        if (localDbIds.length === 0) {
+          const conversationsList = document.getElementById('conversations-list');
+          conversationsList.innerHTML = `
+            <div class="card">
+              <p class="text-center">No conversations found. Start chatting to see one here.</p>
+            </div>
+          `;
+        }
+      }
+    });
+  }
+}
+
+// ✅ Put loadSettingsData OUTSIDE the above function
+function loadSettingsData() {
+  getFromStorage("user_metadata").then(metadata => {
+    userMetadata = metadata || {};
+
+    const ageInput = document.getElementById("user-age");
+    const locationInput = document.getElementById("user-location");
+    const genderSelect = document.getElementById("user-gender");
+    const customGenderWrapper = document.getElementById("custom-gender-wrapper");
+    const customGenderInput = document.getElementById("custom-gender");
+
+    if (ageInput) ageInput.value = userMetadata.age || "";
+    if (locationInput) locationInput.value = userMetadata.location || "";
+    if (genderSelect) genderSelect.value = userMetadata.gender || "";
+
+    if (genderSelect && userMetadata.gender === "Specify your own") {
+      if (customGenderWrapper) customGenderWrapper.classList.remove("hidden");
+      if (customGenderInput) customGenderInput.value = userMetadata.customGender || "";
+    } else {
+      if (customGenderWrapper) customGenderWrapper.classList.add("hidden");
+    }
+  });
+
+  const form = document.getElementById("user-info-form");
+  if (form && !form.dataset.listenerAttached) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const age = document.getElementById("user-age")?.value || "";
+      const location = document.getElementById("user-location")?.value || "";
+      const gender = document.getElementById("user-gender")?.value || "";
+      const customGender = document.getElementById("custom-gender")?.value || "";
+
+      userMetadata = { age, location, gender };
+      if (gender === "Specify your own") {
+        userMetadata.customGender = customGender;
+      }
+
+      saveToStorage("user_metadata", userMetadata);
+      showToast("User information saved", "success");
+    });
+    form.dataset.listenerAttached = "true";
+  }
+}
+
+// Setup event listeners for buttons and interactions
+function setupEventListeners() {
+  // Terms of use button
+  const termsButton = document.getElementById('terms-of-use-button');
+  if (termsButton) {
+    termsButton.addEventListener('click', () => {
+      ageVerified = true;
+      saveToStorage('age_verified', true);
+      document.getElementById('conditions').classList.add('hidden');
+      showMainInterface();
+      showToast('Age verification completed', 'success');
+    });
+  }
+
+  // Quick action buttons
+  const publishQuickBtn = document.getElementById('publish-quick-btn');
+  const downloadQuickBtn = document.getElementById('download-quick-btn');
+  const clearDataBtn = document.getElementById('clear-data-btn');
+  const copyUserIdBtn = document.getElementById('copy-user-id-btn');
+
+  if (publishQuickBtn) {
+    publishQuickBtn.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ type: 'publish' });
+      showToast('Publishing pending conversations', 'success');
+    });
+  }
+
+  if (downloadQuickBtn) {
+    downloadQuickBtn.addEventListener('click', () => {
+      showToast('Download feature coming soon', 'info');
+    });
+  }
+
+  if (clearDataBtn) {
+    clearDataBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear all local data?')) {
+        chrome.storage.local.clear(() => {
+          localDbIds = [];
+          ageVerified = false;
+          userMetadata = {};
+          showToast('All data cleared', 'success');
+          loadDashboardData();
+        });
+      }
+    });
+  }
+
+  if (copyUserIdBtn) {
+    copyUserIdBtn.addEventListener('click', () => {
+      getFromStorage('user_id').then(userId => {
+        if (userId) {
+          navigator.clipboard.writeText(userId);
+          showToast('User ID copied to clipboard', 'success');
+        } else {
+          showToast('No user ID found', 'error');
+        }
+      });
+    });
+  }
+
+  // Conversation page buttons
+  const downloadCsvBtn = document.getElementById('download-csv-btn');
+  const publishAllBtn = document.getElementById('publish-all-btn');
+
+  if (downloadCsvBtn) {
+    downloadCsvBtn.addEventListener('click', () => {
+      showToast('CSV download feature coming soon', 'info');
+    });
+  }
+
+  if (publishAllBtn) {
+    publishAllBtn.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ type: 'publish' });
+      showToast('Publishing all conversations', 'success');
+    });
+  }
+
+  // Settings page buttons
+  const exportDataBtn = document.getElementById('export-data-btn');
+  const clearLocalBtn = document.getElementById('clear-local-btn');
+
+  if (exportDataBtn) {
+    exportDataBtn.addEventListener('click', () => {
+      showToast('Export feature coming soon', 'info');
+    });
+  }
+
+  if (clearLocalBtn) {
+    clearLocalBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear local storage?')) {
+        chrome.storage.local.clear(() => {
+          showToast('Local storage cleared', 'success');
+        });
+      }
+    });
+  }
+
+  // FAQ toggle functionality
+  const faqQuestions = document.querySelectorAll('.faq-question');
+  faqQuestions.forEach(question => {
+    question.addEventListener('click', () => {
+      const answer = question.nextElementSibling;
+      question.classList.toggle('active');
+      answer.classList.toggle('hidden');
+    });
+  });
+
+  // Gender selection change handler
+  const genderSelect = document.getElementById('user-gender');
+  const customGenderWrapper = document.getElementById('custom-gender-wrapper');
+
+  if (genderSelect && customGenderWrapper) {
+    genderSelect.addEventListener('change', () => {
+      if (genderSelect.value === 'Specify your own') {
+        customGenderWrapper.classList.remove('hidden');
+      } else {
+        customGenderWrapper.classList.add('hidden');
+      }
+    });
+  }
+}
+
+// Show toast notification
+function showToast(message, type = 'info') {
+  const toastContainer = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+
+  toastContainer.appendChild(toast);
+
+  // Remove toast after 3 seconds
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
+}
+
+// Storage utility functions
+function saveToStorage(field, value) {
+  const dataToSave = {};
+  dataToSave[field] = value;
+
+  chrome.storage.local.set(dataToSave, function () {
+    if (chrome.runtime.lastError) {
+      console.error('Error saving to storage:', chrome.runtime.lastError);
+    }
+  });
 }
 
 function getFromStorage(field) {
-  const promise = toPromise((resolve, reject) => {
-    chrome.storage.local.get([field], (result) => {
-      if (chrome.runtime.lastError)
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get([field], function (result) {
+      if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError);
-
-      if (result[field]) {
-        resolve(result[field]);
-        console.log("got ", field, " from storage")
       } else {
-        resolve(null);
+        resolve(result[field] || null);
       }
     });
-  });
-  return promise;
-}
-
-function saveToStorage(field, value) {
-  const data = {};
-  data[field] = value; // Construct the object with the dynamic key.
-
-  chrome.storage.local.set(data, function () {
-    if (chrome.runtime.lastError) {
-      console.error(chrome.runtime.lastError);
-    } else {
-      console.log(field, " saved");
-    }
   });
 }

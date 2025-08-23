@@ -104,207 +104,207 @@ function init() {
   });
 
   // Let's find the openai-app element
-    waitForElm("body > div.flex.h-full.w-full.flex-col").then((openai_app_from_storage) => {
-      openai_app = openai_app_from_storage;
+  waitForElm("body > div.flex.h-full.w-full.flex-col").then((openai_app_from_storage) => {
+    openai_app = openai_app_from_storage;
 
-      if (!openai_app) {
-          console.log("Couldn't find openai-app.")
+    if (!openai_app) {
+      console.log("Couldn't find openai-app.")
+    } else {
+      shouldShare = true;
+      app = openai_app;
+      console.log("openai-app found!", openai_app);
+    }
+
+    if (!init_already || openai_app) {
+      init_already = true;
+      getUserInfoFromStorage();
+      handleDataUpdatesFromPopup();
+    }
+
+    if (openai_app) {
+      if (!age_verified) {
+        console.log("age not verified - adding need verification badge");
+        addNeedVerificationBadge();
       } else {
-          shouldShare = true;
-          app = openai_app;
-          console.log("openai-app found!", openai_app);
+        addBadge();
       }
+      setInterval(queryAndUpdateConversationsOpenAI, 7000);
+      setInterval(addBadge, 50000);
+    }
+  });
 
-      if (!init_already || openai_app) {
-          init_already = true;
-          getUserInfoFromStorage();
-          handleDataUpdatesFromPopup();
-      }
-
-      if (openai_app) {
-          if (!age_verified) {
-              console.log("age not verified - adding need verification badge");
-              addNeedVerificationBadge();
-          } else {
-              addBadge();
-          }
-          setInterval(queryAndUpdateConversationsOpenAI, 7000);
-          setInterval(addBadge, 50000);
-      }
-    });
-
-    // Let's find the claude-ai element
-    waitForElm("body > div.flex.min-h-screen.w-full").then((claude_ai_app_from_storage) => {
+  // Let's find the claude-ai element
+  waitForElm("body > div.flex.min-h-screen.w-full").then((claude_ai_app_from_storage) => {
     // waitForElm("[class=\"from-bg-200 to-bg-100 text-text-100 font-styrene min-h-screen bg-gradient-to-b bg-fixed tracking-tight\"]").then((claude_ai_app_from_storage) => {
     // waitForElm("[data-theme=\"claude\"]").then((claude_ai_app_from_storage) => {
 
-      claude_ai_app = claude_ai_app_from_storage;
+    claude_ai_app = claude_ai_app_from_storage;
 
-      if (!claude_ai_app) {
-        console.log("Couldn't find claude-ai-app.");
+    if (!claude_ai_app) {
+      console.log("Couldn't find claude-ai-app.");
+    } else {
+      shouldShare = true;
+      app = claude_ai_app;
+      console.log("claude-ai-app found!", claude_ai_app);
+    }
+
+    if (!init_already || claude_ai_app) {
+      init_already = true;
+      getUserInfoFromStorage();
+      handleDataUpdatesFromPopup();
+    }
+
+    if (claude_ai_app) {
+      if (!age_verified) {
+        console.log("age not verified - adding need verification badge");
+        addNeedVerificationBadge();
       } else {
-        shouldShare = true;
-        app = claude_ai_app;
-        console.log("claude-ai-app found!", claude_ai_app);
+        addBadge();
       }
+      setInterval(queryAndUpdateConversationsClaudeAI, 7000);
+    }
 
-      if (!init_already || claude_ai_app) {
-         init_already = true;
-         getUserInfoFromStorage();
-         handleDataUpdatesFromPopup();
-      }
-
-      if (claude_ai_app) {
-        if (!age_verified) {
-          console.log("age not verified - adding need verification badge");
-          addNeedVerificationBadge();
-        } else {
-          addBadge();
-        }
-        setInterval(queryAndUpdateConversationsClaudeAI, 7000);
-      }
-
-    });
+  });
 
   // Let's find the grok-app element
-    waitForElm('body > div[class*="group/sidebar-wrapper"][class*="min-h-svh"][class*="bg-sidebar"]').then((grok_app_from_storage) => {
-      grok_app = grok_app_from_storage;
-      if (!grok_app) {
-        console.log("Couldn't find grok-app.");
+  waitForElm('body > div[class*="group/sidebar-wrapper"][class*="min-h-svh"][class*="bg-sidebar"]').then((grok_app_from_storage) => {
+    grok_app = grok_app_from_storage;
+    if (!grok_app) {
+      console.log("Couldn't find grok-app.");
+    } else {
+      shouldShare = true;
+      app = grok_app;
+      console.log("grok-app found!", grok_app);
+    }
+
+    if (!init_already || grok_app) {
+      init_already = true;
+      getUserInfoFromStorage();
+      handleDataUpdatesFromPopup();
+    }
+
+    if (grok_app) {
+      if (!age_verified) {
+        console.log("age not verified - adding need verification badge");
+        addNeedVerificationBadge();
+      } else {
+        addBadge();
+      }
+      // You may need to implement queryAndUpdateConversationsGrok if needed
+      setInterval(queryAndUpdateConversationsGrok, 7000);
+      setInterval(addBadge, 50000);
+    }
+  });
+
+  if (window.location.href.includes("gemini.google.com")) {
+    const style = document.createElement('style');
+    style.innerHTML = 'body { padding-top: 50px !important; }';
+    document.head.appendChild(style);
+    console.log("Gemini website detected");
+    gemini_app = document.body;
+    app = gemini_app;
+    shouldShare = true;
+
+    if (!init_already) {
+      init_already = true;
+      getUserInfoFromStorage();
+      handleDataUpdatesFromPopup();
+    }
+
+    getFromStorage("age_verified").then((age_verified_from_storage) => {
+      age_verified = age_verified_from_storage ?? false;
+      if (!age_verified) {
+        console.log("age not verified - adding need verification badge");
+        addNeedVerificationBadge();
+      } else {
+        addBadge();
+      }
+      setInterval(queryAndUpdateConversationsGemini, 7000);
+      setInterval(addBadge, 5000);
+    });
+  }
+
+  if (window.location.href.includes("chat.mistral.ai")) {
+    // Let's find the mistral-app element
+    waitForElm("main").then((mistral_app_from_storage) => {
+      mistral_app = mistral_app_from_storage;
+
+      if (!mistral_app) {
+        console.log("Couldn't find mistral-app.")
       } else {
         shouldShare = true;
-        app = grok_app;
-        console.log("grok-app found!", grok_app);
+        app = mistral_app;
+        console.log("mistral-app found!", mistral_app);
       }
 
-      if (!init_already || grok_app) {
+      if (!init_already || mistral_app) {
         init_already = true;
         getUserInfoFromStorage();
         handleDataUpdatesFromPopup();
       }
 
-      if (grok_app) {
+      if (mistral_app) {
         if (!age_verified) {
           console.log("age not verified - adding need verification badge");
           addNeedVerificationBadge();
         } else {
           addBadge();
+          setInterval(addBadge, 5000);
         }
-        // You may need to implement queryAndUpdateConversationsGrok if needed
-        setInterval(queryAndUpdateConversationsGrok, 7000);
-        setInterval(addBadge, 50000);
+        setInterval(queryAndUpdateConversationsMistral, 7000);
       }
     });
-  
-    if (window.location.href.includes("gemini.google.com")) {
-      const style = document.createElement('style');
-      style.innerHTML = 'body { padding-top: 50px !important; }';
-      document.head.appendChild(style);
-      console.log("Gemini website detected");
-      gemini_app = document.body;
-      app = gemini_app;
-      shouldShare = true;
+  }
 
-      if (!init_already) {
-        init_already = true;
-        getUserInfoFromStorage();
-        handleDataUpdatesFromPopup();
+  if (window.location.href.includes("poe.com")) {
+    console.log("Poe website detected");
+    poe_app = document.body;
+    app = poe_app;
+    shouldShare = true;
+
+    if (!init_already) {
+      init_already = true;
+      getUserInfoFromStorage();
+      handleDataUpdatesFromPopup();
+    }
+
+    getFromStorage("age_verified").then((age_verified_from_storage) => {
+      age_verified = age_verified_from_storage ?? false;
+      if (!age_verified) {
+        console.log("age not verified - adding need verification badge");
+        addNeedVerificationBadge();
+      } else {
+        addBadge();
       }
+      setInterval(queryAndUpdateConversationsPoe, 7000);
+      setInterval(addBadge, 5000);
+    });
+  }
 
-      getFromStorage("age_verified").then((age_verified_from_storage) => {
-        age_verified = age_verified_from_storage ?? false;
-        if (!age_verified) {
-          console.log("age not verified - adding need verification badge");
-          addNeedVerificationBadge();
-        } else {
-          addBadge();
-        }
-        setInterval(queryAndUpdateConversationsGemini, 7000);
-        setInterval(addBadge, 5000);
-      });
+  if (window.location.href.includes("perplexity.ai")) {
+    console.log("Perplexity website detected");
+    perplexity_app = document.body;
+    app = perplexity_app;
+    shouldShare = true;
+
+    if (!init_already) {
+      init_already = true;
+      getUserInfoFromStorage();
+      handleDataUpdatesFromPopup();
     }
 
-    if (window.location.href.includes("chat.mistral.ai")) {
-      // Let's find the mistral-app element
-      waitForElm("main").then((mistral_app_from_storage) => {
-        mistral_app = mistral_app_from_storage;
-
-        if (!mistral_app) {
-          console.log("Couldn't find mistral-app.")
-        } else {
-          shouldShare = true;
-          app = mistral_app;
-          console.log("mistral-app found!", mistral_app);
-        }
-
-        if (!init_already || mistral_app) {
-          init_already = true;
-          getUserInfoFromStorage();
-          handleDataUpdatesFromPopup();
-        }
-
-        if (mistral_app) {
-          if (!age_verified) {
-            console.log("age not verified - adding need verification badge");
-            addNeedVerificationBadge();
-          } else {
-            addBadge();
-            setInterval(addBadge, 5000);
-          }
-          setInterval(queryAndUpdateConversationsMistral, 7000);
-        }
-      });
-    }
-
-    if (window.location.href.includes("poe.com")) {
-      console.log("Poe website detected");
-      poe_app = document.body;
-      app = poe_app;
-      shouldShare = true;
-
-      if (!init_already) {
-        init_already = true;
-        getUserInfoFromStorage();
-        handleDataUpdatesFromPopup();
+    getFromStorage("age_verified").then((age_verified_from_storage) => {
+      age_verified = age_verified_from_storage ?? false;
+      if (!age_verified) {
+        console.log("age not verified - adding need verification badge");
+        addNeedVerificationBadge();
+      } else {
+        addBadge();
       }
-
-      getFromStorage("age_verified").then((age_verified_from_storage) => {
-        age_verified = age_verified_from_storage ?? false;
-        if (!age_verified) {
-          console.log("age not verified - adding need verification badge");
-          addNeedVerificationBadge();
-        } else {
-          addBadge();
-        }
-        setInterval(queryAndUpdateConversationsPoe, 7000);
-        setInterval(addBadge, 5000);
-      });
-    }
-
-    if (window.location.href.includes("perplexity.ai")) {
-      console.log("Perplexity website detected");
-      perplexity_app = document.body;
-      app = perplexity_app;
-      shouldShare = true;
-
-      if (!init_already) {
-        init_already = true;
-        getUserInfoFromStorage();
-        handleDataUpdatesFromPopup();
-      }
-
-      getFromStorage("age_verified").then((age_verified_from_storage) => {
-        age_verified = age_verified_from_storage ?? false;
-        if (!age_verified) {
-          console.log("age not verified - adding need verification badge");
-          addNeedVerificationBadge();
-        } else {
-          addBadge();
-        }
-        setInterval(queryAndUpdateConversationsPerplexity, 7000);
-        setInterval(addBadge, 5000);
-      });
-    }
+      setInterval(queryAndUpdateConversationsPerplexity, 7000);
+      setInterval(addBadge, 5000);
+    });
+  }
 
 
   // *********************************************** Functions ***********************************************
@@ -371,13 +371,13 @@ function init() {
         saveToStorage("user_metadata", user_metadata);
         console.log('UserData has been saved from popup.js');
       } else if (request.type === 'verify?') {
-        sendResponse({age_verified: age_verified});
+        sendResponse({ age_verified: age_verified });
       } else if (request.type === "user_metadata?") {
         console.log("got metadata request. sending", user_metadata);
-        sendResponse({user_metadata: user_metadata});
+        sendResponse({ user_metadata: user_metadata });
       } else if (request.type === "conversation?") {
         getFromStorage(request.conversation_id).then((conversation) => {
-          sendResponse({conversation: conversation});
+          sendResponse({ conversation: conversation });
         });
       } else if (request.type === "termsOfUse" && app) {
         console.log("terms of use clicked");
@@ -388,19 +388,19 @@ function init() {
           document.body.appendChild(floatingBadge);
           console.log("added floating badge");
         }
-      // } else if (request.type === "publish") {
-      //   console.log("publish clicked");
-      //   chrome.runtime.sendMessage({type: "publish"}, function (response) {
-      //       console.log("response from publish request", response);
-      //   });
-      //   sendResponse({msg: "got publish request"});
+        // } else if (request.type === "publish") {
+        //   console.log("publish clicked");
+        //   chrome.runtime.sendMessage({type: "publish"}, function (response) {
+        //       console.log("response from publish request", response);
+        //   });
+        //   sendResponse({msg: "got publish request"});
       } else if (request.type === "gradio?") {
         console.log("gradio? request");
         if (app) {
           console.log("app found");
-          sendResponse({gradio: true});
+          sendResponse({ gradio: true });
         } else {
-          sendResponse({gradio: false});
+          sendResponse({ gradio: false });
         }
       } else if (request.type === "update?") {
         getFromStorage("age_verified").then((age_verified_from_storage) => {
@@ -530,7 +530,7 @@ function init() {
     floatingBadge.style.padding = "20px";
     // floatingBadge.style.paddingTop = "10px";
     floatingBadge.style.fontFamily = "Source Sans Pro,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI," +
-        "Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji";
+      "Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji";
     floatingBadge.style.boxShadow = "0 2px 4px rgba(0, 0, 0, 0.1)";
     floatingBadge.style.borderRadius = "4px";
     floatingBadge.style.fontSize = "14px";
@@ -602,7 +602,7 @@ function init() {
     container.style.display = "flex";
     container.style.alignItems = "center";
     container.style.fontFamily = "Source Sans Pro,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI," +
-        "Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji"; // Fallback fonts included
+      "Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji"; // Fallback fonts included
     container.style.color = "black";
     container.textContent = 'To activate the ShareLM plugin, please verify the terms of use.';
 
@@ -672,17 +672,17 @@ function init() {
       container.style.display = "flex";
       container.style.alignItems = "center";
       container.style.fontFamily = "Source Sans Pro,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI," +
-          "Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji"; // Fallback fonts included
+        "Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji"; // Fallback fonts included
       container.textContent = 'Your conversation is shared with the community! 💬';
       let button = document.createElement("button");
       button.id = "disable-sharing-button";
       button.textContent = 'Click here to stop sharing';
       button.classList.add('disable-sharing-button');
       button.style.fontFamily = "Source Sans Pro,ui-ssans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI," +
-          "Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji"; // Fallback fonts included
+        "Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji"; // Fallback fonts included
       button.style.margin = "0 7px 0 20px";
       button.style.marginLeft = "20px";
-      button.style.background = "transparent"; 
+      button.style.background = "transparent";
       button.style.border = "1px solid black";
 
       if (!shouldShare) {
@@ -706,7 +706,7 @@ function init() {
         }
         container.appendChild(button);
         console.log("clicked button. shouldShare=", shouldShare);
-        saveToStorage("shouldShare", {"shouldShare": shouldShare});
+        saveToStorage("shouldShare", { "shouldShare": shouldShare });
       });
 
       chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
@@ -728,7 +728,7 @@ function init() {
             }
             container.appendChild(button);
           });
-          sendResponse({shouldShare: shouldShare});
+          sendResponse({ shouldShare: shouldShare });
         }
       });
 
@@ -746,7 +746,7 @@ function init() {
             } else if (gemini_app) {
               app = document.body;
             } else if (mistral_app) {
-                app = document.querySelector("main");
+              app = document.querySelector("main");
             }
             if (app) {
               console.log("app found again");
@@ -868,24 +868,24 @@ function init() {
         // try the new selector
         // queryAndUpdateConversations('.scrollbar-custom.mr-1.h-full.overflow-y-auto .text-gray-500',
         //     '.scrollbar-custom.mr-1.h-full.overflow-y-auto .text-gray-600');
-      queryAndUpdateConversations("[class=\"disabled w-full appearance-none whitespace-break-spaces text-wrap break-words bg-inherit px-5 py-3.5 text-gray-500 dark:text-gray-400\"]",
+        queryAndUpdateConversations("[class=\"disabled w-full appearance-none whitespace-break-spaces text-wrap break-words bg-inherit px-5 py-3.5 text-gray-500 dark:text-gray-400\"]",
           "[class=\"prose max-w-none dark:prose-invert max-sm:prose-sm prose-headings:font-semibold prose-h1:text-lg prose-h2:text-base prose-h3:text-base prose-pre:bg-gray-800 dark:prose-pre:bg-gray-900\"]");
       } else {
         queryAndUpdateConversations(org_chat_ui_user_selector,
-            "[class=\"prose max-w-none dark:prose-invert max-sm:prose-sm prose-headings:font-semibold prose-h1:text-lg prose-h2:text-base prose-h3:text-base prose-pre:bg-gray-800 dark:prose-pre:bg-gray-900\"]");
+          "[class=\"prose max-w-none dark:prose-invert max-sm:prose-sm prose-headings:font-semibold prose-h1:text-lg prose-h2:text-base prose-h3:text-base prose-pre:bg-gray-800 dark:prose-pre:bg-gray-900\"]");
       }
     });
   }
 
   function queryAndUpdateConversationsOpenAI() {
     queryAndUpdateConversations(
-        "[data-message-author-role=\"user\"]",
-        "[data-message-author-role=\"assistant\"]");//,
+      "[data-message-author-role=\"user\"]",
+      "[data-message-author-role=\"assistant\"]");//,
   }
 
   function queryAndUpdateConversationsClaudeAI() {
     queryAndUpdateConversations("[data-testid=\"user-message\"]",
-        ".font-claude-response.relative");//,
+      ".font-claude-response.relative");//,
   }
 
   function queryAndUpdateConversationsGrok() {
@@ -940,30 +940,30 @@ function init() {
 
   function queryAndUpdateConversationsGemini() {
     queryAndUpdateConversations(
-        "div.query-text",
-        "div.markdown-main-panel"
+      "div.query-text",
+      "div.markdown-main-panel"
     );
   }
 
   function queryAndUpdateConversationsMistral() {
     queryAndUpdateConversations(
-        '[data-message-author-role="user"] .select-text',
-        '[data-message-author-role="assistant"] [data-message-part-type="answer"]'
+      '[data-message-author-role="user"] .select-text',
+      '[data-message-author-role="assistant"] [data-message-part-type="answer"]'
     );
   }
 
   function queryAndUpdateConversationsPoe() {
     queryAndUpdateConversations(
-        ".Prose_presets_theme-on-accent__rESxX",
-        ".Prose_presets_theme-hi-contrast__LQyM9"
+      ".Prose_presets_theme-on-accent__rESxX",
+      ".Prose_presets_theme-hi-contrast__LQyM9"
 
     );
   }
 
   function queryAndUpdateConversationsPerplexity() {
     queryAndUpdateConversations(
-        ".font-display.text-pretty",
-        "div.prose"
+      ".font-display.text-pretty",
+      "div.prose"
     );
   }
 
@@ -979,10 +979,10 @@ function init() {
       const new_user_msgs = [];
       for (let i = 0; i < user.length; i++) {
         if (sub_user_selector) {
-            const sub_user = user[i].querySelector(sub_user_selector);
-            if (sub_user) {
-              new_user_msgs.push(sub_user.textContent);
-            }
+          const sub_user = user[i].querySelector(sub_user_selector);
+          if (sub_user) {
+            new_user_msgs.push(sub_user.textContent);
+          }
         } else {
           new_user_msgs.push(user[i].textContent);
         }
@@ -995,10 +995,10 @@ function init() {
           if (sub_bot_selector) {
             const sub_bot = bot[i].querySelectorAll(sub_bot_selector);
             if (sub_bot) {
-                let sub_bot_concat = "";
-                for (let j = 0; j < sub_bot.length; j++) {
-                    sub_bot_concat += sub_bot[j].textContent;
-                }
+              let sub_bot_concat = "";
+              for (let j = 0; j < sub_bot.length; j++) {
+                sub_bot_concat += sub_bot[j].textContent;
+              }
               new_bot_msgs.push(sub_bot.textContent);
             }
           } else {
@@ -1027,13 +1027,13 @@ function queryAndUpdateRating(n_messages) {
   // find all rating elements :+1: and :-1: and store the ratings
   return waitForElms(parent_selector).then((parents) => {
     if (!parents || parents.length === 0) {
-        console.log("No ratings found"); // Note - we currently don't support ratings in Gradio UI
-        return new_ratings;
+      console.log("No ratings found"); // Note - we currently don't support ratings in Gradio UI
+      return new_ratings;
     }
     for (let i = 0; i < parents.length; i++) {
       const positive_child = parents[i].querySelector(positive_selector);
       const negative_child = parents[i].querySelector(negative_selector);
-      
+
       if (positive_child) {
         console.log("positive rating found");
         new_ratings[i] = 1;
@@ -1105,7 +1105,7 @@ const toPromise = (callback) => {
 
 function uuidv4() {
   return '00-0-4-1-000'.replace(/[^-]/g,
-      s => ((Math.random() + ~~s) * 0x10000 >> s).toString(16).padStart(4, '0')
+    s => ((Math.random() + ~~s) * 0x10000 >> s).toString(16).padStart(4, '0')
   );
 }
 

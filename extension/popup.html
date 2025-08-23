@@ -1,447 +1,331 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/html">
+<html>
+
 <head>
+  <meta charset="UTF-8">
+  <title>ShareLM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@100;400;700&display=swap" rel="stylesheet">
-  <meta charset="UTF-8">
-  <title>Demographic Survey</title>
-  <style>
-    h2 {
-      text-align: center; /* Center-align the text */
-      font-family: 'Libre Franklin', sans-serif;
-      font-style: normal;
-    }
-    h3 {
-      text-align: center; /* Center-align the text */
-      font-size: 0.9rem;
-      font-family: 'Libre Franklin', sans-serif;
-    }
-    h5 {
-      text-align: center; /* Center-align the text */
-      font-size: 0.8rem;
-      font-family: 'Libre Franklin', sans-serif;
-      font-variant: none;
-    }
-    .contact-info {
-      text-align: center; /* Center-align the contact information */
-      margin-top: 20px; /* Add some spacing at the top */
-      font-family: 'Libre Franklin', sans-serif;
-    }
-    .age-info {
-      text-align: center;
-      margin-top: 20px;
-      font-family: 'Libre Franklin', sans-serif;
-    }
-    /* Custom button styles */
-    .disable-sharing-button {
-      font-family: inherit;
-      font-size: 0.875rem;
-      line-height: 1.25rem;
-      border-radius: 0.5rem;
-      border-width: 1px;
-      cursor: pointer;
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      padding: 0.25rem 0.75rem;
-      user-select: none;
-      white-space: nowrap;
-      border-color: rgba(229, 231, 235, var(--tw-border-opacity));
-      color: rgba(31, 41, 55, var(--tw-text-opacity));
-      background-image: linear-gradient(to bottom, var(--tw-gradient-stops));
-    }
-
-    /* Define the hover effect */
-    .disable-sharing-button:hover {
-      background-color: #007BFF; /* Change the background color on hover */
-      color: white; /* Change the text color on hover */
-    }
-
-    .button-container {
-      text-align: center;
-    }
-
-    .toggle-form-button{
-      width: 20px; /* Adjust the button width to match the arrow image */
-      height: 20px; /* Adjust the button height to match the arrow image */
-      padding: 0;
-      border: none;
-      background: url("assets/expand-button.png") transparent;
-      background-size: contain; /* Adjust this property to control the size of the background image */
-      cursor: pointer;
-      outline: none; /* Remove the default button outline */
-    }
-
-    .toggle-form-button.clicked{
-      background-image: url("assets/up-arrow.png");
-    }
-
-    /* Custom style for form input fields */
-    .custom-input {
-      padding: 0.3rem;
-      border: 1px solid #ccc;
-      border-radius: 0.20rem;
-      font-size: 0.8rem;
-      font-family: 'Libre Franklin', sans-serif;
-    }
-    /* Initially hide the form fields */
-    .hidden {
-      display: none;
-    }
-    body {
-      width: 300px;
-      padding: 10px;
-      background: linear-gradient(to bottom, #Bde8b7, #d3dad5); /* Adjust colors as needed */
-      margin: 0; /* Remove default margin */
-      font-family: 'Libre Franklin', sans-serif;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-
-    label {
-      display: block;
-      margin-bottom: 5px;
-    }
-
-    /* Add this CSS to your existing styles or in a separate CSS file */
-
-    /* Style for the table */
-    .saved-conversations-table {
-      width: 100%;
-      border-collapse: collapse;
-      border-spacing: 0;
-      margin-top: 10px;
-    }
-
-    /*!* Style for the saved-conversations div *!*/
-    /*#saved-conversations {*/
-    /*  max-height: 300px; !* Set a maximum height for the scrollable area *!*/
-    /*  overflow-y: auto; !* Enable vertical scrolling *!*/
-    /*  border: 1px solid #ccc; !* Optional: Add a border for visual separation *!*/
-    /*}*/
-
-    /* Style for the table */
-    #saved-conversations-table {
-      width: 100%;
-      border-collapse: collapse;
-      border-spacing: 0;
-      margin-top: 10px;
-      background-color: white; /* Set the background color to white */
-
-      max-height: 300px; /* Set a maximum height for the scrollable area */
-      overflow-y: auto; /* Enable vertical scrolling */
-      border: 1px solid #ccc; /* Optional: Add a border for visual separation */
-    }
-
-    /* Style for table headers */
-    #saved-conversations-table th {
-      background-color: #007BFF;
-      color: white;
-      padding: 10px;
-      text-align: left;
-    }
-
-    /* Style for alternating rows */
-    #saved-conversations-table tbody tr:nth-child(odd) {
-      background-color: #f2f2f2;
-    }
-
-    /* Style for table cells */
-    #saved-conversations-table td {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-      white-space: pre-wrap;
-      word-wrap: break-word; /* Allow long words to break and wrap onto the next line */
-    }
-
-    /* Hover effect for rows */
-    #saved-conversations-table tbody tr:hover {
-      background-color: #cce5ff;
-    }
-
-    .separator {
-      width: 100%;
-      height: 1px;
-      background: linear-gradient(to right, #Bde8b7, #007BFF, #Bde8b7); /* Adjust colors as needed */
-      margin: 15px 0; /* Adjust the margin to control the spacing between sections */
-    }
-
-    /* CSS for the extended form */
-    #formFieldsWrapper {
-      display: none; /* Initially hide the form */
-      padding: 10px;
-      margin-top: 10px;
-      background-color: white;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-
-    #faq-section-wrapper {
-      margin-top: 20px;
-      text-align: left;
-      background-color: white;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Style for FAQ questions */
-    .faq-item {
-      padding: 10px;
-      border-bottom: 1px solid #ccc;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-
-    .faq-item:hover {
-      background-color: #f2f2f2; /* Background color on hover */
-    }
-
-    .faq-question {
-      margin: 0;
-      font-weight: bold;
-    }
-
-    .faq-answer.hidden {
-      display: none;
-    }
-
-    .share-button {
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-    }
-
-    .share-button img {
-      margin-right: 5px; /* Adjust the spacing between the icon and text */
-      margin-top: 15px;
-    }
-
-    .share-button-container {
-      display: flex;
-      justify-content: center;
-      gap: 10px; /* Adjust the spacing between icons */
-    }
-
-    #already-shared-counter {
-      text-align: center;
-      font-size: 12px;
-      font-weight: bold;
-      padding: 10px;
-      /*background: #007BFF;*/
-      /*background: linear-gradient(90deg, #ff8a00, #e52e71);*/
-      /*border-radius: 8px;*/
-      /*margin: 10px;*/
-      /*box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);*/
-    }
-
-    #counter-number {
-      font-size: 22px;
-      font-weight: bold;
-      display: inline-block;
-      padding: 5px 10px;
-      background: #007BFF;
-      color: white;
-      border-radius: 8px;
-      margin: 5px 0;
-    }
-
-
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index_frame.css">
 </head>
+
 <body>
-<h2>Welcome to ShareLM! 💬</h2>
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <span class="brand-icon">💬</span>
+      <span class="brand-text">ShareLM</span>
+    </div>
+    <div class="navbar-nav">
+      <button class="nav-btn active" data-page="dashboard">Dashboard</button>
+      <button class="nav-btn" data-page="conversations">Conversations</button>
+      <button class="nav-btn" data-page="settings">Settings</button>
+      <button class="nav-btn" data-page="help">Help</button>
+    </div>
+  </nav>
 
-<div id="conditions" align="center" class="hidden">
-  <p>To activate the plugin, please confirm the terms of use</p>
-  <button id="terms-of-use-button" class="disable-sharing-button">Terms of Use</button>
-</div>
-
-<div id="unsupported-message" class="hidden">
-  <p>This site is not supported, please try a different URL. <a href="https://huggingface.co/chat/" target="_blank">This one</a> or <a href="https://huggingface.co/spaces/eswardivi/Phi-3-mini-128k-instruct" target="_blank">this</a> for example.</p>
-</div>
-
-<div id="here-we-go" class="hidden">
-  <h3>Great! Here we go</h3>
-</div>
-
-<form id="demographicForm" class="hidden">
-
-  <p>You can help us (even more!) by providing the following demographic information 🔎 (optional):</p>
-
-  <div class="button-container">
-    <button id="toggleFormButton" class="toggle-form-button" type="button"></button>
-  </div>
-
-  <div id="formFieldsWrapper">
-    <label for="age">Age:</label>
-    <input type="number" class="custom-input" id="age" name="age" min="18" ><br><br>
-
-    <label for="location">Country:</label>
-    <input type="text" class="custom-input" id="location" name="location"><br><br>
-
-    <label for="gender">Gender:</label>
-    <select id="gender" name="gender" class="custom-input" >
-      <option value="">Select Gender</option>
-      <option value="Woman">Woman</option>
-      <option value="Man">Man</option>
-      <option value="Non-binary/Genderqueer/Third Gender">Non-binary/Genderqueer/Third Gender</option>
-      <option value="Genderfluid/Gender non-conforming">Genderfluid/Gender non-conforming</option>
-      <option value="Prefer not to say">Prefer not to respond</option>
-      <option value="Specify your own">Specify your own</option>
-
-    </select><br><br>
-
-    <div id="customGenderWrapper" style="display: none;">
-      <label for="customGender">Specify Your Own Gender:</label>
-      <input type="text" class="custom-input" id="customGender" name="customGender">
-    </div><br><br>
-
-    <button class="disable-sharing-button" type="submit">Submit</button>
-  </div>
-</form>
-
-<div id="already-shared-section">
-  <div class="separator" id="before-counter-separator"></div>
-<!--  <h3>Your Saved Conversations</h3>-->
-  <div id="already-shared-counter">You haven't shared any chat responses yet. <br>Start now! 🚀</div>
-<!--    <span id="counter-number"></span>-->
-</div>
-
-<div id="saved-conversations">
-  <div class="separator" id="before-conversations-separator"></div>
-  <h3>Your Saved Conversations</h3>
-    <p>If you accidentally shared a conversation you want to keep private - this is your chance to remove it</p>
-  <table id="saved-conversations-table">
-    <thead>
-    <tr>
-      <th>Conversations</th>
-      <th>Rate</th>
-      <th>Remove?</th> <!-- Add a new column for actions -->
-    </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-  <div class="button-container">
-    <p>Your data is *YOURS*. Click here to download your locally stored conversations (the ones in the table) as a CSV file</p>
-    <button id="downloadButton" class="disable-sharing-button" type="submit" name="download">Download</button>
-  </div>
-  <div class="button-container">
-    <p>We are publishing the conversations to the DB with a delay. You can publish now to empty the local storage</p>
-    <button id="publishButton" class="disable-sharing-button" type="submit" name="publish">Publish Now</button>
-  </div>
-</div>
-
-<!--<div id="message"></div>-->
-
-<div class="separator"></div>
-
-<!--<div id="faq-section">-->
-
-<!--  <h3>FREQUENTLY ASKED QUESTIONS</h3>-->
-<!--  <p>Here are some frequently asked questions:</p>-->
-
-<!--  <div class="button-container">-->
-<!--    <button id="toggle-faq-button" class="toggle-form-button" type="button"></button>-->
-<!--  </div>-->
-
-<!--  <div id="faq-items-wrapper" class="hidden">-->
-<!--    <div class="faq-item">-->
-<!--      <h4>Question 1?</h4>-->
-<!--      <p>Answer to question 1.</p>-->
-<!--    </div>-->
-<!--    <div class="faq-item">-->
-<!--      <h4>Question 2?</h4>-->
-<!--      <p>Answer to question 2.</p>-->
-<!--    </div>-->
-<!--  </div>-->
-<!--  &lt;!&ndash; Add more FAQ items as needed &ndash;&gt;-->
-<!--</div>-->
-
-<div id="faq-section">
-  <h3>FAQ 🕵️‍♀️</h3>
-  <div id="faq-section-wrapper">
-    <div id="faq-items-wrapper">
-        <div class="faq-item">
-          <h4 class="faq-question">Oops! I just shared a conversation I want to keep private. What to do?</h4>
-          <p class="faq-answer hidden">Check the "Your Saved Conversations" section for the conversation you want to remove. Found it? Great, click the ❌ button. If the conversation is older and you do not see it there anymore, use the contact form to ask to remove it. You can ask to remove all your conversations at any time, but please note that after the dataset was already released it is very likely that someone downloaded and saved an old version of it.</p>
-        </div>
-        <div class="faq-item">
-          <h4 class="faq-question">Would you share the dataset? With what license?</h4>
-          <p class="faq-answer hidden">Sure! The conversations will be released with the most permissive restriction that is allowed by the specific model.</p>
-        </div>
-        <div class="faq-item hidden">
-          <h4 class="faq-question">How can I disable the sharing for a particular conversation?</h4>
-          <p class="faq-answer hidden">You can choose not to share a particular conversation by clicking on the ‘do not share’ button. As an additional precaution, the conversations are not posted to the database immediately. You can see the conversations from the last 8 hours in the extension popup window and remove them. To stop sharing your conversations permanently, please disable or remove the extension. Note that removing the extension does not delete the conversations you have already made.</p>
-        </div>
-        <div class="faq-item hidden">
-          <h4 class="faq-question">What demos are supported? How can I know if my conversation is currently recorded?</h4>
-          <p class="faq-answer hidden">We support a couple of chatbot demos. You will see a banner on the top of the demo page indicating it.</p>
-        </div>
-        <div class="faq-item hidden">
-          <h4 class="faq-question">What information are you collecting?</h4>
-          <p class="faq-answer hidden">We collect a user-id, conversation-id, GMT timestamp, demo URL, conversation content (of both side: the user and the model), and feedback you actively choose to provide (such as thumbs-up). We are not collecting any identifying metadata (such as IP address, location, local time, browser type, etc.). However, it is possible that you could be identified by the content of your conversations. Therefore, please avoid sharing conversations with Identifying/sensitive content (names, e-mail addresses, etc.), as the content of your conversations will be publicly released.</p>
-        </div>
-        <div class="faq-item hidden">
-          <h4 class="faq-question">How can I know if my conversation is currently recorded?</h4>
-          <p class="faq-answer hidden">You will see a banner at the top of the window indicating it</p>
-        </div>
-        <div class="faq-item hidden">
-          <h4 class="faq-question">What is the user-id?</h4>
-          <p class="faq-answer hidden">The user-id is a random string that is generated when you install the extension. It is used to identify your conversations in the database in case you ask to remove them. You can copy it from bellow (in the contact form section). In the released dataset we will regenerate the user-ids to add another layer of anonymity.</p>
-        </div>
-        <div class="faq-item hidden">
-          <h4 class="faq-question">Will it be possible to identify me by my conversations?</h4>
-          <p class="faq-answer hidden">We ask you to avoid sharing conversations with identifying/sensitive content (names, e-mail addresses, etc.), as the content of your conversations will be publicly released. As additional precaution we run anonymization scripts on the conversations content.</p>
-        </div>
-        <div class="faq-item hidden">
-          <h4 class="faq-question">How can I ask to remove all my conversations from the dataset?</h4>
-          <p class="faq-answer hidden">Use the contact form to ask to remove your conversations at any time, please include your user-id. Note that after the dataset was already released it is very likely that someone downloaded and saved an old version of it.</p>
-          </div>
-        <!-- Add more FAQ items as needed -->
-        <div class="button-container">
-          <button id="toggle-faq-button" class="toggle-form-button" type="button"></button>
-        </div>
+  <!-- Age Verification Section -->
+  <div id="conditions" class="page-section hidden">
+    <div class="card verification-card">
+      <h2>Welcome to ShareLM!</h2>
+      <p>To activate the plugin, please confirm the terms of use</p>
+      <button id="terms-of-use-button" class="btn btn-primary">Terms of Use</button>
     </div>
   </div>
-</div>
 
-
-<div class="separator"></div>
-
-<div id="contact-form">
-  <h3>Contact Form</h3>
-  <p>Use <a href="https://forms.gle/9GQYVrGwU6b6PH8AA" target="_blank">the following form</a> to ask to remove your already published conversations. Please include your user-id</p>
-  <div class="button-container">
-    <button id="copyButton" class="disable-sharing-button">Copy user-id</button>
+  <!-- Unsupported Site Message -->
+  <div id="unsupported-message" class="page-section hidden">
+    <div class="card warning-card">
+      <h3>Site Not Supported</h3>
+      <p>This site is not supported. Please try:</p>
+      <div class="link-buttons">
+        <a href="https://huggingface.co/chat/" target="_blank" class="btn btn-secondary">HuggingFace Chat</a>
+        <a href="https://huggingface.co/spaces/eswardivi/Phi-3-mini-128k-instruct" target="_blank"
+          class="btn btn-secondary">Phi-3 Space</a>
+      </div>
+    </div>
   </div>
-</div>
 
-<div class="share-button-container">
-  <!-- Twitter Share Button -->
-  <a class="share-button" href="https://twitter.com/intent/tweet?text=I'm using this cool plugin to share my conversations with open-source LLMs to help the community. You can join too!&url=https%3A%2F%2Fchromewebstore.google.com%2Fdetail%2Fsharelm-share-your-chat-c%2Fnldoebkdaiidhceaphmipeclmlcbljmh" target="_blank">
-    <img src="assets/twitter.png" alt="Twitter" width="30" height="30">
-  </a>
+  <!-- Dashboard Page -->
+  <div id="dashboard-page" class="page-section active">
+    <div class="page-header">
+      <h1>Dashboard</h1>
+    </div>
 
-  <!-- Facebook Share Button -->
-  <a class="share-button" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fchromewebstore.google.com%2Fdetail%2Fsharelm-share-your-chat-c%2Fnldoebkdaiidhceaphmipeclmlcbljmh" target="_blank">
-    <img src="assets/facebook.png" alt="Facebook" width="30" height="30">
-  </a>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">💬</div>
+        <div class="stat-content">
+          <div class="stat-number" id="conversations-shared">-</div>
+          <div class="stat-label">Messages Sent</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-content">
+          <div class="stat-number" id="total-contributors">1.2K</div>
+          <div class="stat-label">Total Contributors</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💾</div>
+        <div class="stat-content">
+          <div class="stat-number" id="dataset-size">45MB</div>
+          <div class="stat-label">Dataset Size</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-content">
+          <div class="stat-number" id="privacy-score">98%</div>
+          <div class="stat-label">Privacy Score</div>
+        </div>
+      </div>
+    </div>
 
-  <!-- LinkedIn Share Button -->
-  <a class="share-button" href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fchromewebstore.google.com%2Fdetail%2Fsharelm-share-your-chat-c%2Fnldoebkdaiidhceaphmipeclmlcbljmh" target="_blank">
-    <img src="assets/linkedin.png" alt="LinkedIn" width="30" height="30">
-  </a>
-</div>
-</div>
+    <!-- Progress Card - Only show if there are pending conversations -->
+    <div class="card progress-card" id="progress-card" style="display: none;">
+      <h3>Pending Conversations</h3>
+      <div class="progress-info">
+        <span id="progress-text">0 conversations ready to share</span>
+        <span id="progress-percentage">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+      <p class="progress-note">Conversations are automatically published after 24 hours</p>
+    </div>
 
-<div class="contact-info">
-  <p>You can also contact us at: 😊</p>
-  <p>Email: shareLM.project@gmail.com</p>
-  <a href="https://www.flaticon.com/free-icons/speak" title="speak icons">icons created by Freepik - Flaticon</a>
-</div>
+    <!-- Quick Actions -->
+    <div class="card actions-card">
+      <h3>Quick Actions</h3>
+      <div class="actions-grid">
+        <button id="publish-quick-btn" class="action-btn">
+          <span class="action-icon">🚀</span>
+          <span>Publish Pending</span>
+        </button>
+        <button id="download-quick-btn" class="action-btn">
+          <span class="action-icon">📥</span>
+          <span>Download Data</span>
+        </button>
+        <button id="clear-data-btn" class="action-btn">
+          <span class="action-icon">🗑️</span>
+          <span>Clear Data</span>
+        </button>
+        <button id="copy-user-id-btn" class="action-btn">
+          <span class="action-icon">🆔</span>
+          <span>Copy User ID</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
-<script src="popup.js"></script>
+  <!-- Conversations Page -->
+  <div id="conversations-page" class="page-section">
+    <div class="page-header">
+      <h1>Conversations</h1>
+      <div class="search-container">
+        <input type="text" id="conversation-search" placeholder="Search conversations..." class="search-input">
+      </div>
+    </div>
+
+    <div class="conversations-summary" id="conversations-summary">
+      <div class="summary-card">
+        <span id="total-conversations">0</span> total conversations
+      </div>
+    </div>
+
+    <div class="conversations-list" id="conversations-list">
+      <div class="loading-state">Loading conversations...</div>
+    </div>
+
+    <div class="card actions-card">
+      <div class="actions-grid">
+        <button id="download-csv-btn" class="btn btn-primary">
+          📥 Download CSV
+        </button>
+        <button id="publish-all-btn" class="btn btn-primary">
+          🚀 Publish All
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Page -->
+  <div id="settings-page" class="page-section">
+    <div class="page-header">
+      <h1>Settings</h1>
+    </div>
+
+    <!-- Sharing Preferences -->
+    <div class="card settings-card">
+      <h3>Sharing Preferences</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <label>Auto-share conversations</label>
+          <p>Automatically share new conversations with the community</p>
+        </div>
+        <div class="toggle-switch">
+          <input type="checkbox" id="auto-share-toggle" checked>
+          <span class="slider"></span>
+        </div>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <label>Include metadata</label>
+          <p>Share demographic information with conversations</p>
+        </div>
+        <div class="toggle-switch">
+          <input type="checkbox" id="metadata-toggle" checked>
+          <span class="slider"></span>
+        </div>
+      </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <label>Anonymous sharing</label>
+          <p>Remove identifying information before sharing</p>
+        </div>
+        <div class="toggle-switch">
+          <input type="checkbox" id="anonymous-toggle" checked>
+          <span class="slider"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Information -->
+    <div class="card settings-card">
+      <h3>User Information</h3>
+      <form id="user-info-form">
+        <div class="form-group">
+          <label for="user-age">Age</label>
+          <input type="number" id="user-age" min="18" class="form-input">
+        </div>
+        <div class="form-group">
+          <label for="user-location">Country</label>
+          <input type="text" id="user-location" class="form-input">
+        </div>
+        <div class="form-group">
+          <label for="user-gender">Gender</label>
+          <select id="user-gender" class="form-input">
+            <option value="">Select Gender</option>
+            <option value="Woman">Woman</option>
+            <option value="Man">Man</option>
+            <option value="Non-binary/Genderqueer/Third Gender">Non-binary/Genderqueer/Third Gender</option>
+            <option value="Genderfluid/Gender non-conforming">Genderfluid/Gender non-conforming</option>
+            <option value="Prefer not to say">Prefer not to respond</option>
+            <option value="Specify your own">Specify your own</option>
+          </select>
+        </div>
+        <div id="custom-gender-wrapper" class="form-group hidden">
+          <label for="custom-gender">Specify Your Own Gender</label>
+          <input type="text" id="custom-gender" class="form-input">
+        </div>
+        <button type="submit" class="btn btn-primary">Save Information</button>
+      </form>
+    </div>
+
+    <!-- Data Management -->
+    <div class="card settings-card">
+      <h3>Data Management</h3>
+      <div class="data-actions">
+        <button id="export-data-btn" class="btn btn-secondary">Export All Data</button>
+        <button id="clear-local-btn" class="btn btn-danger">Clear Local Storage</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Page -->
+  <div id="help-page" class="page-section">
+    <div class="page-header">
+      <h1>Help & FAQ</h1>
+    </div>
+
+    <div class="faq-container">
+      <div class="faq-item">
+        <button class="faq-question">
+          <span>I shared a conversation I want to keep private. What can I do?</span>
+          <span class="faq-arrow">▼</span>
+        </button>
+        <div class="faq-answer hidden">
+          <p>Check the "Conversations" section for the conversation you want to remove. Found it? Great, click the
+            remove button. If the conversation is older and you don't see it there anymore, use the contact form to
+            ask
+            to remove it.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span>Will you share the dataset? With what license?</span>
+          <span class="faq-arrow">▼</span>
+        </button>
+        <div class="faq-answer hidden">
+          <p>Yes! The conversations will be released with the most permissive restriction that is allowed by the
+            specific model.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span>What information are you collecting?</span>
+          <span class="faq-arrow">▼</span>
+        </button>
+        <div class="faq-answer hidden">
+          <p>We collect a user-id, conversation-id, GMT timestamp, demo URL, conversation content (both user and
+            model),
+            and feedback you actively choose to provide. We don't collect identifying metadata like IP address or
+            browser type.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span>How can I disable sharing for a conversation?</span>
+          <span class="faq-arrow">▼</span>
+        </button>
+        <div class="faq-answer hidden">
+          <p>You can choose not to share a particular conversation by clicking the 'do not share' button.
+            Conversations
+            are not posted to the database immediately, so you can review and remove them from the Conversations
+            page.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div class="card contact-card">
+      <h3>Contact Us</h3>
+      <p>Need help or want to remove conversations?</p>
+      <a href="https://forms.gle/9GQYVrGwU6b6PH8AA" target="_blank" class="btn btn-primary">Contact Form</a>
+      <p class="contact-email">Email: shareLM.project@gmail.com</p>
+    </div>
+
+    <!-- Share Buttons -->
+    <div class="card share-card">
+      <h3>Share ShareLM</h3>
+      <div class="share-buttons">
+        <a href="https://twitter.com/intent/tweet?text=I'm using this cool plugin to share my conversations with open-source LLMs to help the community. You can join too!&url=https%3A%2F%2Fchromewebstore.google.com%2Fdetail%2Fsharelm-share-your-chat-c%2Fnldoebkdaiidhceaphmipeclmlcbljmh"
+          target="_blank" class="share-btn twitter">
+          🐱 Twitter
+        </a>
+        <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fchromewebstore.google.com%2Fdetail%2Fsharelm-share-your-chat-c%2Fnldoebkdaiidhceaphmipeclmlcbljmh"
+          target="_blank" class="share-btn facebook">
+          📘 Facebook
+        </a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fchromewebstore.google.com%2Fdetail%2Fsharelm-share-your-chat-c%2Fnldoebkdaiidhceaphmipeclmlcbljmh"
+          target="_blank" class="share-btn linkedin">
+          💼 LinkedIn
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toast-container"></div>
+
+  <script src="popup.js"></script>
 </body>
+
 </html>
